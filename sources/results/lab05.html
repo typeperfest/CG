@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+<canvas id="lab05" width="1200" height="700" style="border: 1px solid">
+</canvas>
+<script>
+
+    var canvas = document.getElementById("lab05");
+    var ctx = canvas.getContext("2d");
+    var x = [];
+    var y = [];
+    var startFill = false;
+    var k = 0;
+
+    function Line(x0, y0, x1, y1) {
+        deltaX = Math.abs(x1 - x0);
+        deltaY = Math.abs(y1 - y0);
+        var swapCoordinates = 0;
+        var sign = ((deltaX - deltaY) >= 0 ? 1 : -1);
+        if ((sign == 1 && x0 > x1) || (sign == -1 && y0 > y1)) {
+            [x0, x1] = [x1, x0];
+            [y0, y1] = [y1, y0];
+        }
+        if (sign == -1) {
+            swapCoordinates = 1;
+            [x0, y0] = [y0, (-1) * x0];
+            [x1, y1] = [y1, (-1) * x1];
+        }
+        var eps = 0;
+        var y = y0;
+        var x = x0;
+        while (x <= x1) {
+            eps += 2 * Math.abs(y1 - y0)
+            if (Math.abs(eps) >= Math.abs(x1 - x0)) {
+                y += Math.sign(y1 - y0);
+                eps -= 2 * Math.abs(x1 - x0);
+            }
+            x += Math.sign(x1 - x0);
+            if (swapCoordinates == 0) {
+                ctx.fillRect(x, y, 1, 1);
+            } else {
+                ctx.fillRect(-y, x, 1, 1);
+            }
+        }
+    }
+
+    function FillFigure(Px, Py) {
+        var min_y = Py[0], max_y = Py[0];
+        for (var i = 0; i < Py.length; ++i) {
+            if (Py[i] < min_y) min_y = Py[i];
+            if (Py[i] > max_y) max_y = Py[i];
+        }
+
+        var y_array = [];
+        for (var i = 0; i < Py.length; ++i) {
+            var next = 0;
+            if (i !== Py.length - 1)
+                next = i + 1;
+            var up = 0, down = 0;
+            if (Py[i] > Py[next]) {
+                up = i;
+                down = next;
+            }
+            else if (Py[i] < Py[next]) {
+                up = next;
+                down = i;
+            }
+            else continue;
+
+            var k = (Py[up] - Py[down]) / (Px[up] - Px[down]);
+            for (var j = Py[down]; j < Py[up]; ++j) {
+                if (typeof y_array[j] == "undefined")
+                    y_array[j] = [];
+                y_array[j].push((j - Py[down])/k + Px[down]);
+            }
+        }
+
+        for (var y = min_y; y < max_y; ++y) {
+            var x_array = y_array[y].sort(function(a, b) { return a - b; });
+            for (var j = 0; j < x_array.length / 2; ++j) {
+                for (var x = x_array[j * 2]; x < x_array[j * 2 + 1]; ++x) {
+                    ctx.fillRect(Math.round(x), Math.round(y), 1, 1);
+                }
+            }
+        }
+    }
+
+    canvas.addEventListener("click", function (event) {
+        if (!startFill) {
+            x.push(event.offsetX);
+            y.push(event.offsetY);
+            if (k >= 1)
+                Line(x[k - 1], y[k - 1], x[k], y[k]);
+            k++;
+        }
+        else {
+            ctx.fillStyle = "#8B00FF";
+            FillFigure(x, y);
+            ctx.fillStyle = "#000000";
+        }
+    });
+
+    document.addEventListener("keypress", function (event) {
+        startFill = true;
+        x.push(x[0]);
+        y.push(y[0]);
+        Line(x[k - 1], y[k - 1], x[0], y[0]);
+    });
+</script>
+</body>
+</html>

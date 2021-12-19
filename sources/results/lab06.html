@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+<canvas id="lab06" width="1200" height="700"  style="border:1px solid">
+</canvas>
+
+<script>
+
+    var canvas = document.getElementById("lab06");
+    var ctx = canvas.getContext("2d");
+
+    var Px = [];
+    var Py = [];
+    var Pz = [];
+    var index = 0;
+
+    function Line(x0, y0, x1, y1) {
+        deltaX = Math.abs(x1 - x0);
+        deltaY = Math.abs(y1 - y0);
+        var swapCoordinates = 0;
+        var sign = ((deltaX - deltaY) >= 0 ? 1 : -1);
+        if ((sign == 1 && x0 > x1) || (sign == -1 && y0 > y1)) {
+            [x0, x1] = [x1, x0];
+            [y0, y1] = [y1, y0];
+        }
+        if (sign == -1) {
+            swapCoordinates = 1;
+            [x0, y0] = [y0, (-1) * x0];
+            [x1, y1] = [y1, (-1) * x1];
+        }
+        var eps = 0;
+        var y = y0;
+        var x = x0;
+        while (x <= x1) {
+            eps += 2 * Math.abs(y1 - y0)
+            if (Math.abs(eps) >= Math.abs(x1 - x0)) {
+                y += Math.sign(y1 - y0);
+                eps -= 2 * Math.abs(x1 - x0);
+            }
+            x += Math.sign(x1 - x0);
+            if (swapCoordinates == 0) {
+                ctx.fillRect(x, y, 1, 1);
+            } else {
+                ctx.fillRect(-y, x, 1, 1);
+            }
+        }
+    }
+
+    function Distance(Px, Py){
+        var k = (Py[2] - Py[0]) / (Px[2] - Px[0]);
+        var b = -1 * k * Px[0] + Py[0];
+        d = Math.abs(-k * Px[1] + Py[1] -1 * b)/Math.sqrt(k * k + 1);
+        return d
+    }
+
+    function Bezier(Px, Py) {
+        if (Distance(Px, Py) > 1) {
+            // x0' y0'
+            var P0x_ = 0.5 * (Px[0] + Px[1]);
+            var P0y_ = 0.5 * (Py[0] + Py[1]);
+
+            // x1' y1'
+            var P1x_ = 0.5 * (Px[1] + Px[2]);
+            var P1y_ = 0.5 * (Py[1] + Py[2]);
+
+            // x0" y0"
+            var Px__ = 0.5 * (P0x_ + P1x_);
+            var Py__ = 0.5 * (P0y_ + P1y_);
+
+            var left_x = [Px[0], P0x_, Px__];
+            var left_y = [Py[0], P0y_, Py__];
+
+            var right_x = [Px__, P1x_, Px[2]];
+            var right_y = [Py__, P1y_, Py[2]];
+
+            Bezier(left_x, left_y);
+            Bezier(right_x, right_y);
+        } else {
+            Line(Px[0], Py[0], Px[2], Py[2]);
+        }
+    }
+
+    function Mult_Mv(M,v){
+        var res = [];
+        for (var i = 0; i < 4; ++i){
+            res.push(0);
+            for (var j = 0; j < 4; ++j){
+                res[i] = res[i] + M[i * 4 + j] * v[j];
+            }
+        }
+        return res;
+    }
+
+    canvas.addEventListener("click", function (event) {
+        if (index < 3) {
+            Px.push(event.offsetX);
+            Py.push(event.offsetY);
+            Pz.push(0);
+            ctx.fillRect(event.offsetX, event.offsetY, 3, 3);
+            index++;
+        } else {
+            ctx.fillStyle = "#8B00FF";
+            Bezier(Px, Py);
+
+            var Px_ = [0, 0, 0];
+            var Py_ = [0, 0, 0];
+            var Pz_ = [0, 0, 0];
+
+            Px_[0] = Px[0];
+            Py_[0] = Py[0];
+            Pz_[0] = Pz[0];
+            Px_[1] = Px[1];
+            Py_[1] = Py[1];
+            Pz_[1] = Pz[1];
+            Px_[2] = Px[2];
+            Py_[2] = Py[2];
+            Pz_[2] = Pz[2];
+
+            for (var i = 0; i < 360; i += 10){
+
+                var alpha = i * Math.PI / 180;
+
+                var M_x = [ 1, 0, 0, 0,
+                    0, Math.cos(alpha), -1 * Math.sin(alpha), 0,
+                    0, Math.sin(alpha), Math.cos(alpha), 0,
+                    0, 0, 0, 1];
+
+                var M_y = [ Math.sin(alpha), 0, Math.cos(alpha), 0,
+                    0, 1, 0, 0,
+                    Math.cos(alpha), 0, -1 * Math.sin(alpha), 0,
+                    0, 0, 0, 1];
+
+                var M_z = [ Math.cos(alpha), -1 * Math.sin(alpha), 0, 0,
+                    Math.sin(alpha), Math.cos(alpha), 0, 0,
+                    0, 0, 0, 0,
+                    0, 0, 0, 1];
+
+                Px_[0] -= Px[1];
+                Py_[0] -= Py[1];
+                Pz_[0] -= Pz[1];
+                Px_[2] -= Px[1];
+                Py_[2] -= Py[1];
+                Pz_[2] -= Pz[1];
+
+                var out = Mult_Mv(M_x, [Px_[0], Py_[0], Pz_[0], 1]);
+
+                Px_[0] = out[0] + Px[1];
+                Py_[0] = out[1] + Py[1];
+
+                out = Mult_Mv(M_x, [Px_[2], Py_[2], Pz_[2], 1]);
+
+                Px_[2] = out[0] + Px[1];
+                Py_[2] = out[1] + Py[1];
+
+                Bezier(Px_, Py_);
+
+                Px_[0] = Px[0];
+                Py_[0] = Py[0];
+                Pz_[0] = Pz[0];
+                Px_[2] = Px[2];
+                Py_[2] = Py[2];
+                Pz_[2] = Pz[2];
+
+            }
+
+            index = 0;
+            points = [];
+
+        }
+    });
+</script>
+</body>
+</html>

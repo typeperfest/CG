@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+<canvas id='lab02' width='1400' height='800' style="border:1px solid">
+</canvas>
+
+<script>
+
+    let canvas = document.getElementById("lab02");
+    let ctx = canvas.getContext("2d");
+    let data = ctx.getImageData(0, 0, canvas.width, canvas.height);
+
+    let x = new Array();
+    let y = new Array();
+    let line = new Array();
+    let flag = false;
+    let count = 0;
+
+    function Line(x0, y0, x1, y1) {
+        deltaX = Math.abs(x1 - x0);
+        deltaY = Math.abs(y1 - y0);
+        let swapCoordinates = 0;
+        let sign = ((deltaX - deltaY) >= 0 ? 1 : -1);
+        if ((sign === 1 && x0 > x1) || (sign === -1 && y0 > y1)) {
+            [x0, x1] = [x1, x0];
+            [y0, y1] = [y1, y0];
+        }
+        if (sign === -1) {
+            swapCoordinates = 1;
+            [x0, y0] = [y0, (-1) * x0];
+            [x1, y1] = [y1, (-1) * x1];
+        }
+        let eps = 0;
+        let y = y0;
+        let x = x0;
+        while (x <= x1) {
+            eps += 2 * Math.abs(y1 - y0)
+            if (Math.abs(eps) >= Math.abs(x1 - x0)) {
+                y += Math.sign(y1 - y0);
+                eps -= 2 * Math.abs(x1 - x0);
+            }
+            x += Math.sign(x1 - x0);
+            if (swapCoordinates == 0) {
+                ctx.fillRect(x, y, 1, 1);
+            } else {
+                ctx.fillRect(-y, x, 1, 1);
+            }
+        }
+    }
+
+    function Clip(xl1, yl1, xl2, yl2) {
+        let tmin = 1.1;
+        let tmax = -0.1;
+        let imin;
+        let imax;
+
+
+        for (let i = 0; i < x.length - 1; i++) {
+
+            let t = ((yl1 - yl2) * (x[i] - xl1) + (xl2 - xl1) * (y[i] - yl1)) / ((x[i + 1] - x[i]) * (yl2 - yl1) + (y[i + 1] - y[i]) * (xl1 - xl2))
+            if (t <= 1 && t >= 0) {
+                if (t < tmin) {
+                    tmin = t;
+                    imin = i;
+                }
+                if (t > tmax) {
+                    tmax = t;
+                    imax = i;
+                }
+            }
+        }
+
+        let xstart = (x[imin + 1] - x[imin]) * tmin + x[imin];
+        let ystart = (y[imin + 1] - y[imin]) * tmin + y[imin];
+
+        let xend = (x[imax + 1] - x[imax]) * tmax + x[imax];
+        let yend = (y[imax + 1] - y[imax]) * tmax + y[imax];
+
+        ctx.fillStyle = "#b00b69";
+        Line(xstart, ystart, xend, yend);
+        ctx.fillStyle = "#000000";
+    }
+
+    canvas.addEventListener("click", function (event) {
+        if (!flag) {
+            x.push(event.offsetX);
+            y.push(event.offsetY);
+            if (count >= 1)
+                Line(x[count - 1], y[count - 1], x[count], y[count]);
+            count++;
+        }
+        else if (flag) {
+            line.push(event.offsetX);
+            line.push(event.offsetY);
+            if (line.length % 4 === 0) {
+                Line(line[line.length - 4], line[line.length - 3], line[line.length - 2], line[line.length - 1]);
+                Clip(line[line.length - 4], line[line.length - 3], line[line.length - 2], line[line.length - 1]);
+            }
+        }
+    });
+
+    document.addEventListener("keypress", function (event) {
+        flag = true;
+        x.push(x[0]);
+        y.push(y[0]);
+        Line(x[count - 1], y[count - 1], x[0], y[0]);
+    });
+
+
+</script>
+</body>
+</html>

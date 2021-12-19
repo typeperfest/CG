@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+<canvas id='original' height='500' width='700'></canvas>
+<canvas id='filtered' height='500' width='700'></canvas>
+<script>
+    let canvas = document.getElementById('original');
+    let canvasFltr = document.getElementById('filtered');
+    let ctxOrgn = canvas.getContext('2d');
+    let ctxFltr = canvasFltr.getContext('2d');
+
+    let image = new Image();
+    image.setAttribute('crossOrigin','');
+    image.src = 'https://sun9-78.userapi.com/impg/YJsIZZxzMChNFWrInZSFXkbffJECYitj-MyIoA/HZ2b1qK0BtM.jpg?size=1080x693&quality=96&sign=1438b74276019b37f7d0b3b83c87be0b&type=album';
+
+    image.onload = function() {
+        ctxOrgn.drawImage(image, 0, 0, canvas.width, canvas.height);
+        let imgDataOrgn = ctxOrgn.getImageData(0, 0, canvas.width, canvas.height);
+        let imgDataFltr = ctxFltr.createImageData(canvas.width, canvas.height);
+        for (let i = 0; i < canvas.height; ++i) {
+            for (let j = 0; j < canvas.width; ++j) {
+                for (let k = 0; k < 3; ++k) {
+
+                    let p = [0, 0, 0, 0, 0, 0, 0, 0, 0];
+                    p[0] = imgDataOrgn.data[4 * ((i - 1) * canvas.width + j - 1) + k];
+                    p[1] = imgDataOrgn.data[4 * ((i - 1) * canvas.width + j) + k];
+                    p[2] = imgDataOrgn.data[4 * ((i - 1) * canvas.width + j + 1) + k];
+                    p[3] = imgDataOrgn.data[4 * (i * canvas.width + j - 1) + k];
+                    p[4] = imgDataOrgn.data[4 * (i * canvas.width + j) + k];
+                    p[5] = imgDataOrgn.data[4 * (i * canvas.width + j + 1) + k];
+                    p[6] = imgDataOrgn.data[4 * ((i + 1) * canvas.width + j - 1) + k];
+                    p[7] = imgDataOrgn.data[4 * ((i + 1) * canvas.width + j) + k];
+                    p[8] = imgDataOrgn.data[4 * ((i + 1) * canvas.width + j + 1) + k];
+                    let Sx = (-1) * p[0] + (0) * p[1] + (1) * p[2] + (-2) * p[3] + (0) * p[4] + 2 * p[5] + (-1) * p[6] + (0) * p[7] + 2 * p[8];
+                    let Sy = (-1) * p[0] + (-2) * p[1] + (-1) * p[2] + (0) * p[3] + (0) * p[4] + (0) * p[5] + (1) * p[6] + (2) * p[7] + (1) * p[8];
+                    let S = Math.sqrt(Sx * Sx + Sy * Sy);
+                    if (S < 128) {
+                        S = 0;
+                    }
+                    imgDataFltr.data[4 * (i * canvas.width + j) + k] = S;
+
+                }
+                imgDataFltr.data[4 * (i * canvas.width + j) + 3] = 255;
+            }
+        }
+        ctxFltr.putImageData(imgDataFltr, 0, 0);
+    }
+</script>
+</body>
+</html>
