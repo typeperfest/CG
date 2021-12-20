@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+<canvas id="lab07" width="1200" height="700"  style="border:1px solid">
+</canvas>
+
+<script>
+
+    function Line(x0, y0, x1, y1) {
+        deltaX = Math.abs(x1 - x0);
+        deltaY = Math.abs(y1 - y0);
+        let swapCoordinates = 0;
+        let sign = ((deltaX - deltaY) >= 0 ? 1 : -1);
+        if ((sign === 1 && x0 > x1) || (sign === -1 && y0 > y1)) {
+            [x0, x1] = [x1, x0];
+            [y0, y1] = [y1, y0];
+        }
+        if (sign === -1) {
+            swapCoordinates = 1;
+            [x0, y0] = [y0, (-1) * x0];
+            [x1, y1] = [y1, (-1) * x1];
+        }
+        let eps = 0;
+        let y = y0;
+        let x = x0;
+        while (x <= x1) {
+            eps += 2 * Math.abs(y1 - y0)
+            if (Math.abs(eps) >= Math.abs(x1 - x0)) {
+                y += Math.sign(y1 - y0);
+                eps -= 2 * Math.abs(x1 - x0);
+            }
+            x += Math.sign(x1 - x0);
+            if (swapCoordinates === 0) {
+                ctx.fillRect(x, y, 1, 1);
+            } else {
+                ctx.fillRect(-y, x, 1, 1);
+            }
+        }
+    }
+
+    function cosinus(v1, v2) {
+        return (v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2]) / (Math.sqrt(Math.pow(v1[0], 2) + Math.pow(v1[1], 2) + Math.pow(v1[2], 2))
+            * Math.sqrt(Math.pow(v2[0], 2) + Math.pow(v2[1], 2) + Math.pow(v2[2], 2)));
+    }
+
+    function Mult_Mv(M,v){
+        let res = [];
+        for (var i = 0; i < 4; ++i){
+            res.push(0);
+            for (var j = 0; j < 4; ++j){
+                res[i] = res[i] + M[i * 4 + j] * v[j];
+            }
+        }
+        return res;
+    }
+
+    function FillFigure(Px, Py) {
+        let length = Px.length;
+        let min_y = Math.round(Py[0]), max_y = Math.round(Py[0]);
+        for (var i = 0; i < length; ++i) {
+            if (Math.round(Py[i]) < min_y) min_y = Math.round(Py[i]);
+            if (Math.round(Py[i]) > max_y) max_y = Math.round(Py[i]);
+        }
+
+        let y_array = [];
+        for (var j = min_y; j < max_y + 1; ++j) {
+            y_array[j] = [];
+        }
+
+        for (let i = 0; i < length; ++i) {
+            let next = 0;
+            if (i !== length - 1)
+                next = i + 1;
+            let up = 0, down = 0;
+            if (Math.round(Py[i]) > Math.round(Py[next])) {
+                up = i;
+                down = next;
+            }
+            else if (Math.round(Py[i]) < Math.round(Py[next])) {
+                up = next;
+                down = i;
+            }
+            else continue;
+
+            console.log(y_array);
+            var k = (Py[up] - Py[down]) / (Px[up] - Px[down]);
+            for (var j = Py[down]; j < Py[up]; ++j) {
+                y_array[Math.round(j)].push((j - Py[down])/k + Px[down]);
+            }
+        }
+
+        for (let y = min_y; y < max_y; ++y) {
+            let x_array = y_array[y].sort(function(a, b) {
+                return a - b;
+            });
+            for (let j = 0; j < x_array.length / 2; ++j) {
+                for (var x = x_array[j * 2]; x < x_array[j * 2 + 1]; ++x) {
+                    ctx.fillRect(Math.round(x), Math.round(y), 1, 1);
+                }
+            }
+        }
+    }
+
+    let canvas = document.getElementById("lab07");
+    let ctx = canvas.getContext("2d");
+
+    let x0 = 250, y0 = 200, z0 = -200;
+
+    let diamond_points = [
+        [x0 + 0, y0 + 0, z0 + 78],
+        [x0 + 45, y0 + 45, z0 + 0],
+        [x0 + 45, y0 + -45, z0 + 0],
+        [x0 + -45, y0 + -45, z0 + 0],
+        [x0 + -45, y0 + 45, z0 + 0],
+        [x0 + 0, y0 + 0, z0 + -78]
+    ];
+
+    let alpha_x = 90 * Math.PI / 180;
+    let alpha_y = 30 * Math.PI / 180;
+    let M_x = [ 1, 0, 0, 0,
+        0, Math.cos(alpha_x), -1*Math.sin(alpha_x), 0,
+        0, Math.sin(alpha_x), Math.cos(alpha_x), 0,
+        0, 0, 0, 1];
+    let M_y = [ Math.sin(alpha_y), 0, Math.cos(alpha_y), 0,
+        0, 1, 0, 0,
+        Math.cos(alpha_y), 0, -1*Math.sin(alpha_y), 0,
+        0, 0, 0, 1];
+    for (let i = 0; i < diamond_points.length; ++i) {
+        let rotated = Mult_Mv(M_x, [diamond_points[i][0], diamond_points[i][1], diamond_points[i][2], 1]);
+        rotated = Mult_Mv(M_y, rotated);
+        diamond_points[i][0] = rotated[0];
+        diamond_points[i][1] = rotated[1];
+        diamond_points[i][2] = rotated[2];
+    }
+
+    let diamond_facets = [
+        [0, 1, 2],
+        [0, 2, 3],
+        [0, 3, 4],
+        [0, 4, 1],
+        [5, 4, 3],
+        [5, 3, 2],
+        [5, 2, 1],
+        [5, 1, 4]
+    ];
+    let I_fon = 20, I_p = 235, K_p = 0.4;
+    let lamp = [500, 20, 5];
+
+    for (let i = 0; i < diamond_facets.length; ++i) {
+        let p0 = diamond_points[diamond_facets[i][0]], p1 = diamond_points[diamond_facets[i][1]],
+            p2 = diamond_points[diamond_facets[i][2]];
+        let center_1_2 = [0.5 * (p2[0] + p1[0]), 0.5 * (p2[1] + p1[1]), 0.5 * (p2[2] + p1[2])];
+        let center = [0.5 * (center_1_2[0] + p0[0]), 0.5 * (center_1_2[1] + p0[1]), 0.5 * (center_1_2[2] + p0[2])];
+        let light = [
+            lamp[0] - center[0],
+            lamp[1] - center[1],
+            lamp[2] - center[2]
+        ];
+        let normal = [
+            (p1[1] - p0[1]) * (p2[2] - p0[2]) - (p2[1] - p0[1]) * (p1[2] - p0[2]),
+            (p2[0] - p0[0]) * (p1[2] - p0[2]) - (p1[0] - p0[0]) * (p2[2] - p0[2]),
+            (p1[0] - p0[0]) * (p2[1] - p0[1]) - (p2[0] - p0[0]) * (p1[1] - p0[1])
+        ];
+        console.log(normal);
+        let observer = [0, 0, -1];
+        if (cosinus(observer, normal) >= 0) {
+            var cos_phi = cosinus(light, normal);
+            var I = I_fon + K_p * I_p * cos_phi;
+            ctx.fillStyle = `rgb(
+                      ${0},
+                      ${I},
+                      ${I})`;
+            FillFigure([p0[0], p1[0], p2[0]], [p0[1], p1[1], p2[1]]);
+            ctx.fillStyle = '#b00b69';
+            Line(p0[0], p0[1], p1[0], p1[1]);
+            Line(p0[0], p0[1], p2[0], p2[1]);
+            Line(p2[0], p2[1], p1[0], p1[1]);
+            ctx.fillStyle = '#FFFF00';
+            ctx.fillRect(500, 20, 20, 20);
+        }
+    }
+</script>
+</body>
+</html>

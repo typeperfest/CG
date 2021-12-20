@@ -44,7 +44,7 @@
                 eps -= 2 * Math.abs(x1 - x0);
             }
             x += Math.sign(x1 - x0);
-            if (swapCoordinates == 0) {
+            if (swapCoordinates === 0) {
                 ctx.fillRect(x, y, 1, 1);
             } else {
                 ctx.fillRect(-y, x, 1, 1);
@@ -74,8 +74,8 @@
             }
         }
 
-        let xstart = (x[imin + 1] - x[imin]) * tmin + x[imin];
-        let ystart = (y[imin + 1] - y[imin]) * tmin + y[imin];
+        let xstart = (x[imin + 1] - x[imin]) * tmin + x[imin] + 1;
+        let ystart = (y[imin + 1] - y[imin]) * tmin + y[imin] + 1;
 
         let xend = (x[imax + 1] - x[imax]) * tmax + x[imax];
         let yend = (y[imax + 1] - y[imax]) * tmax + y[imax];
